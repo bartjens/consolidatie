@@ -1,0 +1,71 @@
+.CONS_MA {
+    background-color: yellow;
+}
+
+.CONS_GMA {
+    background-color:lightcoral;
+}
+
+.CONS_SMA {
+    background-color: red;
+}
+
+.CONS_OMA {
+    background-color: #ffbf00;
+}
+
+
+.CONS_TA {
+    background-color: darkgreen;
+}
+
+.CONS_STA {
+    background-color: darkred;
+}
+
+.CONS_OTA {
+    background-color: #ffbf00;
+}
+
+.CONS_GTA {
+    background-color:greenyellow;
+}
+
+
+
+table.CONS {
+    border-collapse: collapse;
+    width: 90%;
+}
+
+td.CONS_time {
+    width: 1%;
+    text-align: center;
+}
+
+td.CONS_timedummy {
+    width: 1%;
+    text-align: center;
+}
+
+.CONS_afspraak {
+    border-left-style: solid;
+    border-left-color: black;
+    border-left-width: 3px;
+}
+
+.CONS_time {
+    background-color: lightblue;
+}
+
+.CONS_querydt {
+    background-color: red;
+}
+
+.CONS_inactiveline {
+    color: silver;
+}
+
+.CONS_nietbeschikbaar {
+    background-color: silver;
+}
