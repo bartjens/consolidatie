@@ -21,6 +21,12 @@
     $checkDatum = date('Ymd000000');
     if (!empty($_GET['checkDatum']))
         $checkDatum = date('Ymd000000',strtotime($_GET['checkDatum']));
+    if (!empty($_POST['checkDatum']))
+        $checkDatum = date('Ymd000000',strtotime($_POST['checkDatum']));
+    if (!empty($_POST['jsonData']['checkDatum']))
+        $checkDatum = date('Ymd000000',strtotime($_POST['jsonData']['checkDatum']));
+
+
 
     $filteredData = array();
 
@@ -47,7 +53,7 @@
 
     echo '<pre><code>';
 
-    print_r($parsedData);
+    // print_r($parsedData);
     // print_r($array);
     // echo htmlspecialchars($rawXML);
 

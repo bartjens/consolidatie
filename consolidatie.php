@@ -21,7 +21,7 @@ class ConsolidatieEngine {
     private $bouwsteenCodes = array();
 
     private $checkDatum = '';
-    private $log = false;
+    private $log = 0;
 
     public function __construct() {
 
@@ -31,7 +31,8 @@ class ConsolidatieEngine {
         $this->arrayData = $inputData;
         $linesMAPerMBH = array();
         $linesTAPerMBH = array();
-        $linesMGBPerMBH = array();
+        $linesMGBZPerMBH = array();
+        $linesMGBPPerMBH = array();
         foreach ($this->arrayData as $id=>$line) {
             if (!$line['beschikbaar']) {
                 continue;
@@ -42,16 +43,19 @@ class ConsolidatieEngine {
             if ($line['typeBouwsteen']=='TA')
                 $linesTAPerMBH[$line['mbhID']][]=$line;
 
-            if ($line['typeBouwsteen']=='MGB')
-                $linesMGBPerMBH[$line['mbhID']][]=$line;
+            if ($line['typeBouwsteen']=='MGBP')
+                $linesMGBPPerMBH[$line['mbhID']][]=$line;
+            if ($line['typeBouwsteen']=='MGBZ')
+                $linesMGBZPerMBH[$line['mbhID']][]=$line;
         }
 
         $this->checkDatum = $checkDatum;
         // uasort($this->arrayData, array($this,'sorteerAntiChronologisch'));
         // echo '<pre>';
         $this->checkMedicatieAfspraken($linesMAPerMBH);
-        $this->checkToedieningsAfspraken($linesTAPerMBH);
-        $this->checkMedicatieGebruik($linesMGBPerMBH);
+        // $this->checkToedieningsAfspraken($linesTAPerMBH);
+        $this->checkMedicatieGebruik($linesMGBZPerMBH);
+        $this->checkMedicatieGebruik($linesMGBPPerMBH);
         // echo '<pre>';
         foreach ($this->checkList as $mbhID => $mbhData) {
             foreach ($mbhData as $typeBS) {
@@ -75,6 +79,8 @@ class ConsolidatieEngine {
             }
         }
 
+        // print_r($this->checkList);
+
         return array(
             'Actuele Medicatie'=>$this->actueleData,
             'Toekomstige Medicatie'=>$this->toekomstData,
@@ -97,34 +103,39 @@ class ConsolidatieEngine {
     private function checkMedicatieAfspraken($linesMAPerMBH) {
         foreach ($linesMAPerMBH as $mbhID => $lines) {
             uasort($lines, array($this,'sorteerAntiChronologisch'));
+
             $checkAfspraakDatum = $this->getEersteAfspraakDatumToekomstigeMas($lines);
-            // $this->log("\ncheckAfspraakDatum $checkAfspraakDatum");
+
+            // echo "\ncheckAfspraakDatum $checkAfspraakDatum";
 
             // echo '<pre>';
             // print_r($lines);
             // echo '</pre>';
             foreach ($lines as $line) {
 
-                // $this->log( "\n<br/>checking line <strong>" . $line['simpelID'] . '</strong>');
+                $this->log( "\n<br/>checking line <strong>" . $line['simpelID'] . '</strong>');
                 if ($result = $this->checkM1($line)=='Y') {
                     //heeft de MA een Annuleer vlag
-                    // $this->log( 'positive M1 ' . $result);
+                    $this->log( 'positive M1 ' . $result);
                     continue;
                 }
 
                 if ($result = $this->checkM2($line)=='Y') {
                     // Staat MA als referentie op geannuleerde  checklist
-                    // $this->log( 'positive M2 ' . $result);
+                    $this->log( 'positive M2 ' . $result);
                     continue;
                 }
 
                 if ($result = $this->checkM3($line)=='Y') {
                      //Heeft stop-datum in verleden
                     //We kunnen oudere MA's in deze MBH-ID negeren
-                    // $this->log('positive M3 ' . $result);
-
-                    if ($line['afspraakDatumTijd'] < $checkAfspraakDatum)
+                    $this->log('positive M3 ' . $result);
+                    if ($checkAfspraakDatum!='') {
+                        if ($line['afspraakDatumTijd'] < $checkAfspraakDatum)
+                            break;
+                    } else {
                         break;
+                    }
 
                     continue;
                 }
@@ -133,10 +144,15 @@ class ConsolidatieEngine {
                     //StartDatum/tijd In toekomst
                     //We kunnen oudere MA's in deze MBH-ID negeren (Want geen paralelle)
 
-                    // $this->log('positive M4 ' . $result);
-                    if ($line['afspraakDatumTijd'] < $checkAfspraakDatum)
+                    $this->log('positive M4 ' . $result);
+                    if ($checkAfspraakDatum!='') {
+                        if ($line['afspraakDatumTijd'] < $checkAfspraakDatum)
+                            break;
+                    } else {
                         break;
+                    }
                 }
+
             }
 
 
@@ -187,8 +203,6 @@ class ConsolidatieEngine {
 
         if ($line['stop'] < $this->checkDatum) {
             // Zet MA op Checklist. Oudere MA's kunnen genegeerd worden.
-
-
             $result = 'Y';
         }
 
@@ -201,6 +215,7 @@ class ConsolidatieEngine {
 
             if ($referentieType=='MA') {
                 $this->gestaakteMedicatie[$line['mbhID']][$referentie][] = $line['id'];
+                // $this->checkList[$line['mbhID']]['MA'][$line['id']] = $line;
             }
 
             if ($line['stopCode']=='O') {
@@ -588,17 +603,17 @@ class ConsolidatieEngine {
             foreach ($lines as $line) {
                 if ($result = $this->checkMG1($line)=='Y') {
                     //(T0) Staat de referentie MA op de checklist met status geannuleerd
-                    $this->log( 'positive MG1 ' . $result);
+                    // $this->log( 'positive MG1 ' . $result);
 
                     if ($result = $this->checkMG2($line)=='Y') {
                         //(T0) Staat de referentie MA op de checklist met status geannuleerd
-                        $this->log( 'positive MG1 ' . $result);
+                        // $this->log( 'positive MG1 ' . $result);
 
                         continue;
                     } else {
                         if ($result = $this->checkMG6($line)=='Y') {
                             //(T0) Staat de referentie MA op de checklist met status geannuleerd
-                            $this->log( 'positive MG1 ' . $result);
+                            // $this->log( 'positive MG1 ' . $result);
                             continue;
                         } else {
                             //niet compleet
@@ -608,20 +623,20 @@ class ConsolidatieEngine {
                     continue;
                 }
                 if ($result = $this->checkMG3($line)=='Y') {
-                    //(T0) Staat de referentie MA op de checklist met status geannuleerd
-                    $this->log( 'positive MG1 ' . $result);
+                    // Is er een nieuwere MA/TA of MGB vanhetzelfde type
+                    // $this->log( 'positive MG1 ' . $result);
 
                     continue;
                 }
                 if ($result = $this->checkMG4($line)=='Y') {
-                    //(T0) Staat de referentie MA op de checklist met status geannuleerd
-                    $this->log( 'positive MG1 ' . $result);
+                    //Heeft stop-datum in verleden
+                    // $this->log( 'positive MG1 ' . $result);
 
                     continue;
                 }
                 if ($result = $this->checkMG5($line)=='Y') {
                     //(T0) Staat de referentie MA op de checklist met status geannuleerd
-                    $this->log( 'positive MG1 ' . $result);
+                    // $this->log( 'positive MG1 ' . $result);
 
                     continue;
                 }
@@ -631,6 +646,7 @@ class ConsolidatieEngine {
 
     private function checkMG1($line) {
         // (MG 1) Heeft de MGB een verwijzing naar de MA/TA
+        // GEEN IDEE WAAROM!!
         // $this->log( "Check MG1 " . $line['simpelID']);
         $result = 'N';
         //$this->log($result);
@@ -646,25 +662,62 @@ class ConsolidatieEngine {
     }
 
     private function checkMG3($line) {
-        // (MG 1) Heeft de MGB een verwijzing naar de MA/TA
+        // Is er een nieuwere MA/TA of MGB vanhetzelfde type
         // $this->log( "Check MG1 " . $line['simpelID']);
+        $bouwsteenType = $line['typeBouwsteen'];
         $result = 'N';
+        if (isset($this->checkList[$line['mbhID']])) {
+            foreach ($this->checkList[$line['mbhID']] as $type=>$data) {
+                foreach ($data as $regel) {
+                    if ($type=='MA' || $type=='TA' || $type==$bouwsteenType) {
+                        if ($regel['afspraakDatumTijd']>$line['afspraakDatumTijd']) {
+                            // echo "\n OUDERE MGB" . $line['typeBouwsteen'] . ':' . $line['simpelID'] . ' ' . $regel['typeBouwsteen'] . ':' . $regel['simpelID'];
+                            $line['status'] = 'gestaakt';
+                            return 'Y';
+                        }
+                    }
+                }
+            }
+        }
+
+        $this->checkList[$line['mbhID']][$bouwsteenType][$line['id']] = $line;
+
         //$this->log($result);
         return $result;
     }
 
     private function checkMG4($line) {
-        // (MG 1) Heeft de MGB een verwijzing naar de MA/TA
+        //Heeft stop-datum in verleden
         // $this->log( "Check MG1 " . $line['simpelID']);
+        $bouwsteenType = $line['typeBouwsteen'];
         $result = 'N';
+        if ($line['stop'] < $this->checkDatum) {
+            $result = 'Y';
+            $line['status'] = 'gestopt';
+        }
+
+        $this->checkList[$line['mbhID']][$bouwsteenType][$line['id']] = $line;
+
         //$this->log($result);
         return $result;
     }
 
     private function checkMG5($line) {
-        // (MG 1) Heeft de MGB een verwijzing naar de MA/TA
+        // StartDatum/tijd In toekomst
         // $this->log( "Check MG1 " . $line['simpelID']);
+        $bouwsteenType = $line['typeBouwsteen'];
         $result = 'N';
+        if ($line['start'] > $this->checkDatum) {
+            // MGB is toekomst
+            $line['status'] = 'toekomst';
+            $this->checkList[$line['mbhID']][$bouwsteenType][$line['id']] = $line;
+            $result = 'Y';
+
+        } else {
+            $line['status'] = 'huidig';
+            $this->checkList[$line['mbhID']][$bouwsteenType][$line['id']] = $line;
+        }
+
         //$this->log($result);
         return $result;
     }
@@ -681,11 +734,12 @@ class ConsolidatieEngine {
 
 
     private function getEersteAfspraakDatumToekomstigeMas($lines) {
-        // uasort($lines, array($this,'sorteerAntiChronologischStartDatum'));
-        $afspraakDatumTijd = '';
 
+        $afspraakDatumTijd = '';
+        // echo '<pre>';
         foreach ($lines as $line) {
-            if ($this->checkDatum > $line['start']) {
+            // echo "\n" . $line['simpelID'];
+            if ($afspraakDatumTijd > $line['start']) {
                 continue;
             }
             if ($afspraakDatumTijd=='') {
@@ -696,6 +750,7 @@ class ConsolidatieEngine {
             if ($line['afspraakDatumTijd'] < $afspraakDatumTijd ) {
                 $afspraakDatumTijd = $line['afspraakDatumTijd'];
             }
+            // echo " $afspraakDatumTijd";
         }
 
         return $afspraakDatumTijd;
@@ -716,44 +771,53 @@ class ConsolidatieEngine {
     // }
 
 
-    private function sorteerAntiChronologischStartDatum($a,$b) {
-        if (($a['start']??'') < ($b['start']??''))
-            return -1;
+    // private function sorteerAntiChronologischStartDatum($a,$b) {
+    //     if (($a['start']??'') < ($b['start']??''))
+    //         return -1;
 
-        return 1;
+    //     return 1;
 
-    }
+    // }
 
-    private function sorteerChronologisch($a,$b) {
+    // private function sorteerChronologisch($a,$b) {
 
-        if ($a['mbhID'] < $b['mbhID'])
-            return -1;
-        if ($a['mbhID'] > $b['mbhID'])
-            return 1;
+    //     if ($a['mbhID'] < $b['mbhID'])
+    //         return -1;
+    //     if ($a['mbhID'] > $b['mbhID'])
+    //         return 1;
 
-        if ($a['afspraakDatumTijd'] < $b['afspraakDatumTijd'])
-            return -1;
+    //     if ($a['afspraakDatumTijd'] < $b['afspraakDatumTijd'])
+    //         return -1;
 
-        if ($a['afspraakDatumTijd'] > $b['afspraakDatumTijd'])
-            return 1;
+    //     if ($a['afspraakDatumTijd'] > $b['afspraakDatumTijd'])
+    //         return 1;
 
-        if (($a['start']??'') < ($b['start']??''))
-            return -1;
-        if (($a['start']??'') > ($b['start']??''))
-            return 1;
+    //     if (($a['start']??'') < ($b['start']??''))
+    //         return -1;
+    //     if (($a['start']??'') > ($b['start']??''))
+    //         return 1;
 
-        if (($a['stop']??'') < ($b['stop']??''))
-            return -1;
-        if (($a['stop']??'') > ($b['stop']??''))
-            return 1;
+    //     if (($a['stop']??'') < ($b['stop']??''))
+    //         return -1;
+    //     if (($a['stop']??'') > ($b['stop']??''))
+    //         return 1;
 
-    }
+    // }
 
     private function sorteerAntiChronologisch($a,$b) {
+        //Dit is een wijziging t.o.v. de specs!
+        //Sorteer eerst op de startdatum, dan op afspraakdatum
+
         if ($a['mbhID'] < $b['mbhID'])
             return -1;
         if ($a['mbhID'] > $b['mbhID'])
             return 1;
+
+        // if ($a['afspraakDatumTijd'] > $b['afspraakDatumTijd'])
+        //     return -1;
+
+        // if ($a['afspraakDatumTijd'] < $b['afspraakDatumTijd'])
+        //     return 1;
 
 
         if (($a['start']??'') > ($b['start']??''))
@@ -761,16 +825,18 @@ class ConsolidatieEngine {
         if (($a['start']??'') < ($b['start']??''))
             return 1;
 
-        if (($a['stop']??'') > ($b['stop']??''))
-            return 1;
-        if (($a['stop']??'') < ($b['stop']??''))
-            return -1;
-
         if ($a['afspraakDatumTijd'] > $b['afspraakDatumTijd'])
             return -1;
 
         if ($a['afspraakDatumTijd'] < $b['afspraakDatumTijd'])
             return 1;
+
+        if (($a['stop']??'') > ($b['stop']??''))
+            return 1;
+        if (($a['stop']??'') < ($b['stop']??''))
+            return -1;
+
+
 
 
 

@@ -111,8 +111,10 @@ class parseXML {
                     $templateId = $bouwsteenData['substanceAdministration']['templateId']['@attributes']['root'];
                 }
             }
-            if (isset($this->templateIds[$templateId]))
+            if (isset($this->templateIds[$templateId])) {
                 $bouwsteen = $this->templateIds[$templateId];
+
+            }
         }
         if (!empty($bouwsteenData['supply']['templateId'])) {
             if (is_array($bouwsteenData['supply']['templateId'])) {
@@ -134,6 +136,16 @@ class parseXML {
             // print_r($bouwsteenData);
             return;
         }
+
+        if ($bouwsteen=='MGB') {
+            //controleer de auteur
+            $auteurType = $this->getAuthorType($bouwsteenData['substanceAdministration']);
+            if ($auteurType=='ONESELF') {
+                $bouwsteen='MGBP';
+            } else {
+                $bouwsteen='MGBZ';
+            }
+        }
         // echo $templateId;
         switch ($bouwsteen) {
             case 'MA':
@@ -146,7 +158,8 @@ class parseXML {
                 $this->getLogistiekeData($bouwsteenData,$bouwsteen);
                 break;
 
-            case 'MGB':
+            case 'MGBP':
+            case 'MGBZ':
                 $this->getMedicatieGebruikData($bouwsteenData,$bouwsteen);
                 break;
         }
@@ -197,7 +210,7 @@ class parseXML {
         $relaties = $this->getRelaties($bouwsteenData['substanceAdministration']);
         $parsedData['relaties'] = $relaties;
 
-       # $author = $this->getAuthorInfo($bouwsteenData['substanceAdministration']);
+       # $author = $this->getAuthorType($bouwsteenData['substanceAdministration']);
 
         $this->parsedData[$id] = $parsedData;
 
@@ -284,7 +297,7 @@ class parseXML {
         $relaties = $this->getRelaties($bouwsteenData['substanceAdministration']);
         $parsedData['relaties'] = $relaties;
 
-       # $author = $this->getAuthorInfo($bouwsteenData['substanceAdministration']);
+       # $author = $this->getAuthorType($bouwsteenData['substanceAdministration']);
 
         $this->parsedData[$id] = $parsedData;
 
@@ -538,12 +551,9 @@ class parseXML {
         return trim(implode('',$arr));
     }
 
-    private function getAuthorInfo($bouwsteenData) {
-        $authorArr = $bouwsteenData['author'];
-        $type = $authorArr['assignedAuthor']['code']['@attributes']['code'];
-        $name = $authorArr['assignedAuthor']['assignedPerson']['name']['family'];
-        // print_r($authorArr);
-
+    private function getAuthorType($bouwsteenData) {
+        $type = $bouwsteenData['author']['assignedAuthor']['code']['@attributes']['code']??'';
+        return $type;
     }
 
     private function setToZero() {
@@ -551,7 +561,8 @@ class parseXML {
         $IDS['MA']=0;
         $IDS['TA']=0;
         $IDS['WDS']=0;
-        $IDS['MGB']=0;
+        $IDS['MGBP']=0;
+        $IDS['MGBZ']=0;
         $IDS['MVE']=0;
         return $IDS;
     }

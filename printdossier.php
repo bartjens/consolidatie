@@ -45,7 +45,7 @@ class PrintDossier {
 
         // $this->printConsolidatieLijst($dossierData,$consolidatedData);
         echo '<pre>';
-        print_r($consolidatedData);
+        // print_r($consolidatedData);
         echo '</pre>';
     }
 
@@ -237,7 +237,7 @@ class PrintDossier {
                 echo '<tr><td colspan=7><strong>' . $type . '</strong></td></tr>';
 
                 foreach ($dataSet as $mbhID => $data) {
-                    // echo '<tr><td>&nbsp;</th></tr>';
+                    echo '<tr><td>&nbsp;</th></tr>';
                     foreach ($data as $id => $line) {
                         $this->printConsolidatieLine($line);
                     }
@@ -304,25 +304,4 @@ class PrintDossier {
         return 0;
 
     }
-
-    private function sorteerAntiChronologisch($a,$b) {
-        if ($a['mbhID'] < $b['mbhID'])
-            return -1;
-        if ($a['mbhID'] > $b['mbhID'])
-            return 1;
-
-        if (($a['stop']??'') > ($b['stop']??''))
-            return -1;
-        if (($a['stop']??'') < ($b['stop']??''))
-            return 1;
-
-        if ($a['afspraakDatumTijd'] > $b['afspraakDatumTijd'])
-            return -1;
-
-        if ($a['afspraakDatumTijd'] < $b['afspraakDatumTijd'])
-            return 1;
-
-        return 0;
-    }
-
 }

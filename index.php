@@ -275,6 +275,11 @@ XML source
 
 </form>
 <div id='result'></div>
-
+<p>&nbsp;</p>
+<p>Let op:<br/>
+Om de status te bepalen staat in de documentatie dat er op afspraakdatum gesorteerd moet worden om zo snel mogelijk te stoppen met de verwerking.<br/>
+Dat gaat verkeerd wanneer een MA wordt tussengevoegd. Daarom sorteer ik op <strong>startdatum</strong>! Dat geeft het goede resultaat!
+	</p>
+<p>25-02-2024: MA's en MGB worden verwerkt. De andere bouwstenen nog niet.</p>
 </html>
 </body>
