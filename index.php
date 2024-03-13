@@ -266,12 +266,18 @@ XML source
 	</span>
 
 
-
-<!-- <input type='button' value='Make JSON' id='makejson'> -->
-
-  <input type="file" id="myFile" name="filename">
-  <input name='uploadfile' type="submit">
-  <input type='button' value='reload' id='reload'>
+	<input type="file" id="myFile" name="filename">
+	<input name='uploadfile' type="submit">
+	<input type='button' value='reload' id='reload'>
+	Iteratie marge
+	<select name='lowercheckmargin' id='lowercheckmargin'>
+		<option value='0'>0</option>
+		<option value='1'>-1</option>
+		<option value='2'>-2</option>
+		<option value='10'>-10</option>
+		<option value='100'>-100</option>
+	</select>
+	dagen
 
 </form>
 <div id='result'></div>
@@ -281,5 +287,6 @@ Om de status te bepalen staat in de documentatie dat er op afspraakdatum gesorte
 Dat gaat verkeerd wanneer een MA wordt tussengevoegd. Daarom sorteer ik op <strong>startdatum</strong>! Dat geeft het goede resultaat!
 	</p>
 <p>25-02-2024: MA's en MGB worden verwerkt. De andere bouwstenen nog niet.</p>
+<p>Code staat op github <a href="https://github.com/bartjens/consolidatie">https://github.com/bartjens/consolidatie</a></p>
 </html>
 </body>
