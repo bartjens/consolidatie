@@ -9,6 +9,7 @@ class PrintDossier {
     private $arrayData;
     private $patientData;
     private $dossierData;
+    private $consolidatedData;
     private $parsedData = array();
     private $useAfspraakDatumTijdToSort = true;
     private $checkDatum;
@@ -32,22 +33,46 @@ class PrintDossier {
 
     public function printDossier($dossierData,$consolidatedData) {
         echo '<h2>' . date('d-M-Y',strtotime($this->checkDatum)) . '</h2>';
+        $this->dossierData = $dossierData;
+        $this->consolidatedData = $consolidatedData;
+        $this->setFlagsOnDossierData();
         // echo $this->checkDatum;
         // print_r($dossierData);
-        uasort($dossierData, array($this,'sorteerChronologisch'));
+        uasort($this->dossierData, array($this,'sorteerChronologisch'));
         // print_r($dossierData);
-        $this->printConsolidatieLijst($dossierData,$consolidatedData);
+        $this->printConsolidatieLijst($this->dossierData,$this->consolidatedData);
         echo '<p>&nbsp;</p>';
-        $this->printTotaalSet($dossierData);
+        $this->printTotaalSet($this->dossierData);
         echo '<p>&nbsp;</p>';
-        $this->printTimeLine($dossierData);
+        $this->printTimeLine($this->dossierData);
         echo '<p>&nbsp;</p>';
 
         // $this->printConsolidatieLijst($dossierData,$consolidatedData);
         echo '<pre>';
-        // print_r($consolidatedData);
+        print_r($this->consolidatedData);
+        print_r($this->dossierData);
         echo '</pre>';
     }
+
+    private function setFlagsOnDossierData() {
+
+        foreach ($this->consolidatedData as $type=>$dataSet) {
+            if ($type=='traceInfo')
+                continue;
+            if (!empty($dataSet)) {
+                foreach ($dataSet as $mbhID => $data) {
+                    // print_r($data);
+                    foreach ($data as $id => $line) {
+                        // echo $id;
+                        if (isset($this->dossierData[$id]))
+                            $this->dossierData[$id]['check'] = $line['check']??'AA';
+
+                    }
+                }
+            }
+        }
+    }
+
 
     private function printTotaalSet($dossierData) {
 
@@ -55,12 +80,13 @@ class PrintDossier {
         echo '<tr>';
             echo '<th></th><th>typeBouwsteen</th>';
             echo '<th>ID</th>';
-            echo '<th>Ref ID</th>';
+            // echo '<th>Ref ID</th>';
             echo '<th>afspraakDatumTijd</th>';
             echo '<th>start</th>';
             echo '<th>stop</th>';
             echo '<th>geneesmiddel</th>';
             echo '<th>dosering</th>';
+            echo '<th>Check</th>';
         echo '</tr>';
 
         $mbhid='';
@@ -95,21 +121,21 @@ class PrintDossier {
                 $mbhid = $line['mbhID'];
                 $afspraakDatumAfterRequestDatum=($afspraakDatumTijd > $this->checkDatum);
                 // echo "\n" . $afspraakDatumTijd . ' ' . $this->checkDatum;
-                $referentie = '';
-                if (($line['stopCode']??'')!='') {
+                // $referentie = '';
+                // if (($line['stopCode']??'')!='') {
 
-                    $refID = $line['relaties'][0]['ID']??'';
-                    $refSimpelID = $dossierData[$refID]['simpelID']??'';
-                    $referentieType = $line['relaties'][0]['soortRelatieMemoCode']??'';
-                    $referentie = $referentieType . '&nbsp;' . $refSimpelID;
+                //     $refID = $line['relaties'][0]['ID']??'';
+                //     $refSimpelID = $dossierData[$refID]['simpelID']??'';
+                //     $referentieType = $line['relaties'][0]['soortRelatieMemoCode']??'';
+                //     $referentie = $referentieType . '&nbsp;' . $refSimpelID;
 
-                }
+                // }
 
                 echo sprintf('<tr class="%s">',($afspraakDatumAfterRequestDatum?'CONS_inactiveline':''));
                 echo '<td>' . ($line['stopCode']??'') . '</td>';
                 echo '<td>' . ($line['typeBouwsteen']!='MA'?'&nbsp;&nbsp;&nbsp;':'') . $line['typeBouwsteen'] . '</td>';
                 echo '<td>' . $line['simpelID'] . '</td>';
-                echo '<td>' . $referentie . '</td>';
+                // echo '<td>' . $referentie . '</td>';
 
                 echo '<td>' . date('Y-m-d H:i',strtotime($line['afspraakDatumTijd'])) . '</td>';
                 echo '<td>' . ($start==''?'':date('Y-m-d H:i',strtotime($start))) . '</td>';
@@ -117,6 +143,7 @@ class PrintDossier {
 
                 echo '<td>' . ($line['geneesMiddel']['naam']??'') . '</td>';
                 echo '<td>' . ($line['omschrijvingDosering']??'') . '</td>';
+                echo '<td>' . ($line['check']??'') . '</td>';
                 echo '</tr>';
         }
         echo '</table>';
@@ -171,9 +198,13 @@ class PrintDossier {
             if ($mbhID != $line['mbhID'] && $mbhID != '')
                 echo "</tr><td colspan='$numCols'>&nbsp;<hr/></td><tr>";
             $mbhID = $line['mbhID'];
-            $dateAfspraak = substr($line['afspraakDatumTijd'],0,8);
-            $dateStart = substr(($line['start']??''),0,8);
-            $dateStop = substr(($line['stop']??''),0,8);
+            $dateAfspraakPrint = substr($line['afspraakDatumTijd'],0,8);
+            // $dateStart = substr(($line['start']??''),0,8);
+            // $dateStop = substr(($line['stop']??''),0,8);
+            $dateAfspraak = $line['afspraakDatumTijd'];
+            $dateStart = $line['start']??'';
+            $dateStop = $line['stop']??'';
+
 
             // echo "<pre>\n";
             // print_r($line);
@@ -183,11 +214,13 @@ class PrintDossier {
             foreach ($dateArr as $dateSet) {
 
                 $datePrint = $dateSet['date'];
-                $dateXML = $dateSet['dateXML'];
+                $dateXML = $dateSet['dateXML'] . '000000';
+
                 $class='';
                 $let = '';
                 // echo "\n" . $dateXML . "\t" . $dateAfspraak;
-                if ($dateXML==$dateAfspraak) {
+                // echo "\n" . $dateSet['dateXML'] . "\t" . $dateAfspraakPrint;
+                if ($dateSet['dateXML']==$dateAfspraakPrint) {
                     $class='CONS_afspraak ';
                     // $let = 'A';
                     // echo $class;
@@ -202,8 +235,12 @@ class PrintDossier {
                     if (!$line['beschikbaar'])
                         $class .= ' CONS_nietbeschikbaar';
                 }
+
                 if ($dateXML >= $dateStart && $dateXML < $dateStop) {
+
                     $class .= (' CONS_' . $line['stopCode'] . $line['typeBouwsteen']);
+                    // echo $class;
+                    // $let = 'W';
 
                     if (!$line['beschikbaar'])
                         $class .= ' CONS_nietbeschikbaar';
@@ -233,6 +270,9 @@ class PrintDossier {
         foreach ($consolidatedData as $type=>$dataSet) {
             if ($type=='traceInfo')
                 continue;
+            if ($type=='skipList')
+                continue;
+
             if (!empty($dataSet)) {
                 echo '<tr><td colspan=7><strong>' . $type . '</strong></td></tr>';
 
@@ -265,10 +305,10 @@ class PrintDossier {
         // echo sprintf('<tr class="%s">',($afspraakDatumAfterRequestDatum?'inactiveline':''));
         echo '<tr>';
         echo '<td>' . ($line['stopCode']??'') . '</td>';
-        echo '<td>' . ($line['typeBouwsteen']!='MA'?'&nbsp;&nbsp;&nbsp;':'') . $line['typeBouwsteen'] . '</td>';
-        echo '<td>' . $line['simpelID'] . '</td>';
+        echo '<td>' . (($line['typeBouwsteen']??'')!='MA'?'&nbsp;&nbsp;&nbsp;':'') . ($line['typeBouwsteen']??'') . '</td>';
+        echo '<td>' . ($line['simpelID']??'') . '</td>';
 
-        echo '<td>' . date('Y-m-d H:i',strtotime($line['afspraakDatumTijd'])) . '</td>';
+        echo '<td>' . date('Y-m-d H:i',strtotime(($line['afspraakDatumTijd']??''))) . '</td>';
         echo '<td>' . ($start==''?'':date('Y-m-d H:i',strtotime($start))) . '</td>';
         echo '<td>' . ($stop==''?'':date('Y-m-d H:i',strtotime($stop))) . '</td>';
 

@@ -26,7 +26,13 @@
     if (!empty($_POST['jsonData']['checkDatum']))
         $checkDatum = date('Ymd000000',strtotime($_POST['jsonData']['checkDatum']));
 
-
+    $lowerCheckMargin=0;
+    if (!empty($_GET['lowerCheckMargin']))
+        $lowerCheckMargin = $_GET['lowerCheckMargin'];
+    if (!empty($_POST['lowerCheckMargin']))
+        $lowerCheckMargin = $_POST['lowerCheckMargin'];
+    if (!empty($_POST['jsonData']['lowerCheckMargin']))
+        $lowerCheckMargin = $_POST['jsonData']['lowerCheckMargin'];
 
     $filteredData = array();
 
@@ -46,7 +52,7 @@
     }
 
     $consolidator = new ConsolidatieEngine();
-    $consolidatedData = $consolidator->process($filteredData,$checkDatum);
+    $consolidatedData = $consolidator->process($filteredData,$checkDatum,$lowerCheckMargin);
 
     $printer = new PrintDossier($checkDatum,$fileName??'',$fileType);
     $printer->printDossier($parsedData,$consolidatedData);

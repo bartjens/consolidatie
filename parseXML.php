@@ -339,7 +339,7 @@ class parseXML {
         $timeUnit = array('uur'=>'hour', 'dag'=>'day','d'=>'day','wk'=>'week','jaar'=>'year');
         // print_r($effectiveTime);
         if ($effectiveTime=='') {
-            echo "LET OP GEEN Effective Time: ";
+            echo "\n<br/>LET OP GEEN Effective Time: ";
             $fout=1;
         }
         if (is_array($effectiveTime)) {
